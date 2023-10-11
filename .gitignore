@@ -1,0 +1,11 @@
+Assemb.o
+Disassemb.o
+MainCalc.o
+Proc.o
+SPU.o
+Stack.o
+Out.txt
+ERRORS.txt
+ERRSPU.txt
+ASM.txt
+Bytecode.txt
