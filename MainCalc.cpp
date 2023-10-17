@@ -5,7 +5,7 @@ int main() {
     printf("Program started\n");
 
     const char *ASM = "ASM.txt";
-    const char *Bytecode = "Bytecode.txt";
+    const char *Bytecode = "Bytecode.bin";
     const char *Outputfile = "Out.txt";
 
     //assemb(ASM, Bytecode);

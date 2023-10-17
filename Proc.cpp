@@ -9,10 +9,16 @@ int pocess(const char *Bytecodefilename, const char *Outputfilename) {
     struct SPU spu = {};
     SPUctor(&spu, "ERRSPU.txt", "ERRORS.txt", 1, 1);
     SPUreadbytecode(&spu, "Bytecode.txt");
-    SPUdump(&spu);
+    //SPUdump(&spu);
 
+    if (spu.CS[spu.IP] != VERSION) {
+        printf("Byrecode has format not for this verion of program\n");
+        return -1;
+    }
+
+    spu.IP += 2;
     int value1 = 0, value2 = 0;
-    int input  = spu.CS[0];
+    int input  = spu.CS[spu.IP];
 
     while (spu.IP < spu.CS_capacity) {
         switch(input) {
@@ -108,12 +114,12 @@ int pocess(const char *Bytecodefilename, const char *Outputfilename) {
             
             case Sin:
                 value1 = stack_pop(&spu.stk);
-                stack_push(&spu.stk, (int) sin(value1));
+                stack_push(&spu.stk, (int) 100 * sin(value1));
                 break;
             
             case Cos:
                 value1 = stack_pop(&spu.stk);
-                stack_push(&spu.stk, (int) cos(value1));
+                stack_push(&spu.stk, (int) 100 * cos(value1));
                 break;
 
             case In:

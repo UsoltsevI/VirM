@@ -6,15 +6,37 @@ int assemb(const char *ASMfilename, const char *Bytecodefilename) {
     printf("The assembler has started performing its tasks\n");
 
     FILE *ASM = fopen(ASMfilename, "r");
-    FILE *Bytecode = fopen(Bytecodefilename, "w");
+    FILE *Bytecode = fopen(Bytecodefilename, "wb");
 
     char input[MAX_COMMAND_SIZE] = {};
     char inhel[MAX_COMMAND_SIZE] = {};
-    int check = fscanf(ASM, "%s", input);
+    int version = -1, numcommand = -1;
+    int check = fscanf(ASM, "%d", &version);
+    
+    if (version != VERSION) {
+        printf("Incorrect ASM version\n");
+        return -1;
+    }
 
-    while ((check != EOF) && (check == 1)) {
+    check = fscanf(ASM, "%d", &numcommand);
+    
+    int *buf = (int *) calloc(numcommand + 2, sizeof(int));
+
+    if (buf == NULL) {
+        printf("Failed callocation for buf at assemb\n");
+        return -1;
+    }
+
+    buf[0] = VERSION;
+    buf[1] = numcommand;
+
+    size_t curnum = 2;
+    
+    check = fscanf(ASM, "%s", input);
+
+    while ((check != EOF) && (check == 1) && (curnum < numcommand)) {
         if (!strcmp(input, "HLT")) {
-            fprintf(Bytecode, "%d", HLT);
+            buf[curnum++] = HLT;
 
         } else if (!strcmp(input, "push")) {
             int value = 0;
@@ -28,16 +50,20 @@ int assemb(const char *ASMfilename, const char *Bytecodefilename) {
 
                 } else {
                     if (!strcmp(inhel, "rax")) {
-                        fprintf(Bytecode, "%d %d\n", Pushr, 1);
+                        buf[curnum++] = Pushr, 
+                        buf[curnum++] = 1;
 
                     } else if (!strcmp(inhel, "rbx")) {
-                        fprintf(Bytecode, "%d %d\n", Pushr, 2);
+                        buf[curnum++] = Pushr;
+                        buf[curnum++] = 2;
 
                     } else if (!strcmp(inhel, "rcx")) {
-                        fprintf(Bytecode, "%d %d\n", Pushr, 3);
+                        buf[curnum++] = Pushr;
+                        buf[curnum++] = 3;
 
                     } else if (!strcmp(inhel, "rdx")) {
-                        fprintf(Bytecode, "%d %d\n", Pushr, 4);
+                        buf[curnum++] = Pushr;
+                        buf[curnum++] = 4;
 
                     } else {
                         printf("Undefined command after push\n");
@@ -45,7 +71,8 @@ int assemb(const char *ASMfilename, const char *Bytecodefilename) {
                 }
 
             } else {
-                fprintf(Bytecode, "%d %d\n", Push, value);
+                buf[curnum++] = Push;
+                buf[curnum++] = value;
             }
         
         } else if (!strcmp(input, "pop")) {
@@ -55,52 +82,56 @@ int assemb(const char *ASMfilename, const char *Bytecodefilename) {
                 printf("ERROR: check != 1 at pop\n");
             } else {
                 if (!strcmp(inhel, "rax")) {
-                    fprintf(Bytecode, "%d %d\n", Popr, 1);
+                    buf[curnum++] = Popr;
+                    buf[curnum++] = 1;
 
                 } else if (!strcmp(inhel, "rbx")) {
-                    fprintf(Bytecode, "%d %d\n", Popr, 2);
+                    buf[curnum++] = Popr;
+                    buf[curnum++] = 2;
 
                 } else if (!strcmp(inhel, "rcx")) {
-                    fprintf(Bytecode, "%d %d\n", Popr, 3);
+                    buf[curnum++] = Popr;
+                    buf[curnum++] = 3;
 
                 } else if (!strcmp(inhel, "rdx")) {
-                    fprintf(Bytecode, "%d %d\n", Popr, 4);
+                    buf[curnum++] = Popr;
+                    buf[curnum++] = 4;
 
                 } else {
-                    printf("Just a pop...\n");
-                    fprintf(Bytecode, "%d\n", Pop);
+                    //printf("Just a pop...\n");
+                    buf[curnum++] = Pop;
                 }
             }
 
         } else if (!strcmp(input, "div")) {
-            fprintf(Bytecode, "%d\n", Div);
+            buf[curnum++] = Div;
 
         } else if (!strcmp(input, "sub")) {
-            fprintf(Bytecode, "%d\n", Sub);
+            buf[curnum++] = Sub;
 
         } else if (!strcmp(input, "out")) {
-            fprintf(Bytecode, "%d\n", Out);
+            buf[curnum++] = Out;;
 
         } else if (!strcmp(input, "add")) {
-            fprintf(Bytecode, "%d\n", Add);
+            buf[curnum++] = Add;
 
         } else if (!strcmp(input, "mul")) {
-            fprintf(Bytecode, "%d\n", Mul);
+            buf[curnum++] = Mul;
 
         } else if (!strcmp(input, "sqrt")) {
-            fprintf(Bytecode, "%d\n", Sqrt);
+            buf[curnum++] = Sqrt;
 
         } else if (!strcmp(input, "sin")) {
-            fprintf(Bytecode, "%d\n", Sin);
+            buf[curnum++] = Sin;
 
         } else if (!strcmp(input, "cos")) {
-            fprintf(Bytecode, "%d\n", Cos);
+            buf[curnum++] = Cos;
 
         } else if (!strcmp(input, "in")) {
-            fprintf(Bytecode, "%d\n", In);
+            buf[curnum++] = In;
 
         } else {
-            fprintf(Bytecode, "%d", EOF);
+            buf[curnum++] = EOF;
             printf("Undefined command\n");
             printf("check = %d\n", check);
             printf("input = %s\n", input);
@@ -109,6 +140,7 @@ int assemb(const char *ASMfilename, const char *Bytecodefilename) {
         check = fscanf(ASM, "%s", input);
     }
 
+    fwrite(buf, sizeof(int), numcommand, Bytecode);
     fclose(Bytecode);
     fclose(ASM);
     printf("The assembler has completed its tasks\n");

@@ -210,3 +210,57 @@ int SPUreadbytecode(struct SPU *spu, const char *bytecode_file_name) {
 
     return 0;
 }
+
+int SPUreadbytecodebin(struct SPU *spu, const char *bytecode_file_name) {
+    if (SPUver(spu)) {
+        printf("SPUvar != 0 at SPUreadbytecode\n");
+        return -1;
+    }
+
+    if (bytecode_file_name == NULL) {
+        printf("bytecode_file_name == NULL at SPUreadbytecode\n");
+        return -1;
+    }
+
+    FILE *bytecode = fopen(bytecode_file_name, "rb");
+
+    if (bytecode == NULL) {
+        printf("foupen bytecode file failed at SPUreadbytecode\n");
+        return -1;
+    }
+
+    fseek(bytecode, EOF, SEEK_END);
+
+    spu->CS_capacity = ftell(bytecode);
+
+    spu->CS = (int *) calloc(spu->CS_capacity + 1, sizeof(int));
+
+    if (spu->CS == NULL) {
+        printf("Failed callocation for spu->CS at SPUreadbytecodebin\n");
+        return -1;
+    }
+
+    fseek(bytecode, 0, SEEK_SET);
+
+    fread(spu->CS, sizeof(int), spu->CS_capacity, bytecode);
+
+    spu->CS[spu->CS_capacity] = 0;
+
+    fclose(bytecode);
+
+    return 0;
+}
+
+/*
+    fseek(ReadableFile, EOF, SEEK_END);
+
+    struc_p->num_elem = ftell(ReadableFile);   
+
+    struc_p->buf = (char *) calloc(struc_p->num_elem + 1, sizeof(char));  
+
+    if (struc_p->buf == NULL)
+        return -1;
+
+    fseek(ReadableFile, 0, SEEK_SET);
+
+    fread(struc_p->buf, sizeof(char), struc_p->num_elem, ReadableFile);*/

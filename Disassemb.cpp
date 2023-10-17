@@ -1,41 +1,52 @@
 #include <stdio.h>
 #include "Calc.h"
 
+static int readbytecode(int *buf, const char *Bytecodefilename);
+
 int disassemb(const char *ASMfilename, const char *Bytecodefilename) {
     printf("The disassembler has started performing its tasks\n");
     
     FILE *ASM = fopen(ASMfilename, "w");
-    FILE *Bytecode = fopen(Bytecodefilename, "r");
 
+    int *buf = {};
+
+    if (readbytecode(buf, Bytecodefilename)) {
+        printf("ERROR at readbytecode (from disassemb)\n");
+        return -1;
+    }
+    printf("?\n");
+    printf("bug[0] = %d\n", buf[0]);
+    if (*buf != VERSION) {
+        printf("Incorrect bytecode version\n");
+        return -1;
+    }
+
+    printf("?\n");
+    int numcommand = buf[1] - 2;
+    printf("buf[1] = %d\n", buf[1]);
     int input = 0;
     int value = 0;
-    int check = fscanf(Bytecode, "%d", &input);
+    size_t curnum = 2;
+    input = buf[curnum++];
 
-    while ((check != EOF) && (check == 1)) {
+    while (curnum < numcommand) {
+        printf("input = %d\n", input);
         switch (input) {
             case HLT:
                 fprintf(ASM, "%s\n", "HLT");
                 break;
 
             case Push:
-                check = fscanf(Bytecode, "%d", &value);
+                value = buf[curnum++];
 
-                if (check != 1) {
-                    printf("ERROR: check != 1 at push\n");
-                    return -1;
-                }
-                printf("Just a push...\n");
+                //printf("Just a push...\n");
                 fprintf(ASM, "%s %d\n", "push", value);
                 break;
 
             case Pushr:
-                check = fscanf(Bytecode, "%d", &value);
+                value = buf[curnum++];
 
-                if (check != 1) {
-                    printf("ERROR: check != 1 at Pushr\n");
-                    return -1;
-
-                } else if (value == 1){
+                if (value == 1){
                     fprintf(ASM, "%s %s\n", "push", "rax");
 
                 } else if (value == 2) {
@@ -59,13 +70,9 @@ int disassemb(const char *ASMfilename, const char *Bytecodefilename) {
                 break;
 
             case Popr:
-                check = fscanf(Bytecode, "%d", &value);
+                value = buf[curnum++];
 
-                if (check != 1) {
-                    printf("ERROR: check != 1 at Popr\n");
-                    return -1;
-
-                } else if (value == 1){
+                if (value == 1){
                     fprintf(ASM, "%s %s\n", "pop", "rax");
 
                 } else if (value == 2) {
@@ -83,6 +90,7 @@ int disassemb(const char *ASMfilename, const char *Bytecodefilename) {
                 }
 
                 break;
+
             case Div:
                 fprintf(ASM, "%s\n", "div");
                 break;
@@ -121,17 +129,49 @@ int disassemb(const char *ASMfilename, const char *Bytecodefilename) {
             
             default:
                 printf("Undefined command\n");
-                printf("check = %d\n", check);
                 printf("input = %d\n", input);
         }
 
-        check = fscanf(Bytecode, "%d", &input);
+        input = buf[curnum++];
     }
 
-    fclose(Bytecode);
     fclose(ASM);
 
     printf("The disassembler has completed its tasks\n");
+
+    return 0;
+}
+
+static int readbytecode(int *buf, const char *Bytecodefilename) {
+    FILE *Bytecode = fopen(Bytecodefilename, "rb");
+
+    if (Bytecode == NULL) {
+        printf("foupen bytecode file failed at disassemb\n");
+        return -1;
+    }
+
+    fseek(Bytecode, EOF, SEEK_END);
+
+    size_t bufcapacity = ftell(Bytecode);
+    
+    bufcapacity = bufcapacity / 4;
+
+    buf = (int *) calloc(bufcapacity + 1, sizeof(int));
+
+    if (buf == NULL) {
+        printf("Failed callocation for buf at disassemb\n");
+        return -1;
+    }
+
+    fseek(Bytecode, 0, SEEK_SET);
+
+    fread(buf, sizeof(int), bufcapacity, Bytecode);
+
+    buf[bufcapacity] = 0;
+    buf[0] = VERSION;
+    buf[1] = bufcapacity - 2;
+
+    fclose(Bytecode);
 
     return 0;
 }

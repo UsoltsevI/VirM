@@ -4,6 +4,7 @@
 #include "Stack.h"
 
 #define MAX_COMMAND_SIZE 5
+#define VERSION 111
 
 enum {
     HLT  = -1,
