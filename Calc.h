@@ -44,7 +44,7 @@ struct SPU {
     bool is_dtor;
 };
 
-int assemb(const char *ASMfilename, const char *Bytecodefilename);
+int assemb(const char *ASMfilename, const char *Bytecodefilename, const char *Logfilename);
 
 int disassemb(const char *ASMfilename, const char *Bytecodefilename);
 

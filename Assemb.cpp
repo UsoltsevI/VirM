@@ -15,11 +15,11 @@ static int numundefmarks = 0;
 
 static int search_mark_addres(const char *inhel);
 static int add_mark(const char* input, const size_t curnum);
-static int jmp_func(int buf[], size_t *curnum, FILE* ASM);
+static int jmp_func(int buf[], size_t *curnum, FILE* ASM, FILE *Log);
 static void dump_buf(const int *buf, const size_t numcommand);
 static void create_arr();
 
-int assemb(const char *ASMfilename, const char *Bytecodefilename) {
+int assemb(const char *ASMfilename, const char *Bytecodefilename, const char *Logfilename) {
     printf("The assembler has started performing its tasks\n");
 
     if (numundefmarks == 0)
@@ -29,6 +29,7 @@ int assemb(const char *ASMfilename, const char *Bytecodefilename) {
 
     FILE *ASM = fopen(ASMfilename, "r");
     FILE *Bytecode = fopen(Bytecodefilename, "wb");
+    FILE *Log = fopen(Logfilename, "w");
 
     char input[MAX_COMMAND_SIZE] = {};
     char inhel[MAX_COMMAND_SIZE] = {};
@@ -52,14 +53,23 @@ int assemb(const char *ASMfilename, const char *Bytecodefilename) {
     buf[0] = VERSION;
     buf[1] = numcommand;
 
+    fprintf(Log, "VERSION: %d\n", VERSION);
+    fprintf(Log, "numcommand = %d\n", numcommand);
+
     size_t curnum = 2;
     
     check = fscanf(ASM, "%s", input);
 
+    fprintf(Log, "\t Name          Code       Addres\n");
+    fprintf(Log, "\tin ASM        for VM     in Bytecode buf\n");
+
+
     while ((check != EOF) && (check == 1) && (curnum < numcommand + 2)) {
+        fprintf(Log, "\t%5s ", input);
         if (!strcmp(input, "HLT")) {
             //printf("HLT curnum = %d\n", curnum);
             buf[curnum++] = HLT;
+            fprintf(Log, "     \t\t%d \t\t\t%lu\n", HLT, curnum - 1);
             
 
         } else if (!strcmp(input, "push")) {
@@ -70,21 +80,26 @@ int assemb(const char *ASMfilename, const char *Bytecodefilename) {
                     printf("ERROR: check != 1 at push\n");
 
                 } else {
+                    fprintf(Log, "%s ", inhel);
                     if (!strcmp(inhel, "rax")) {
                         buf[curnum++] = Pushr, 
                         buf[curnum++] = 1;
+                        fprintf(Log, "\t\t%d %d \t\t%lu %lu\n", Pushr, 1, curnum - 2, curnum - 1);
 
                     } else if (!strcmp(inhel, "rbx")) {
                         buf[curnum++] = Pushr;
                         buf[curnum++] = 2;
+                        fprintf(Log, "\t\t%d %d \t\t%lu %lu\n", Pushr, 2, curnum - 2, curnum - 1);
 
                     } else if (!strcmp(inhel, "rcx")) {
                         buf[curnum++] = Pushr;
                         buf[curnum++] = 3;
+                        fprintf(Log, "\t\t%d %d \t\t%lu %lu\n", Pushr, 3, curnum - 2, curnum - 1);
 
                     } else if (!strcmp(inhel, "rdx")) {
                         buf[curnum++] = Pushr;
                         buf[curnum++] = 4;
+                        fprintf(Log, "\t\t%d %d \t\t%lu %lu\n", Pushr, 4, curnum - 2, curnum - 1);
 
                     } else {
                         printf("Undefined command after push\n");
@@ -94,6 +109,7 @@ int assemb(const char *ASMfilename, const char *Bytecodefilename) {
             } else {
                 buf[curnum++] = Push;
                 buf[curnum++] = value;
+                fprintf(Log, "%d \t\t%d %d \t\t%lu %lu\n", value, Push, value, curnum - 2, curnum - 1);
             }
         
         } else if (!strcmp(input, "pop")) {
@@ -101,87 +117,103 @@ int assemb(const char *ASMfilename, const char *Bytecodefilename) {
                 printf("ERROR: check != 1 at pop\n");
 
             } else {
+                fprintf(Log, "%s ", inhel);
                 if (!strcmp(inhel, "rax")) {
                     buf[curnum++] = Popr;
                     buf[curnum++] = 1;
+                    fprintf(Log, "\t\t%d %d \t\t%lu %lu\n", Popr, 1, curnum - 2, curnum - 1);
 
                 } else if (!strcmp(inhel, "rbx")) {
                     buf[curnum++] = Popr;
                     buf[curnum++] = 2;
+                    fprintf(Log, "\t\t%d %d \t\t%lu %lu\n", Popr, 2, curnum - 2, curnum - 1);
 
                 } else if (!strcmp(inhel, "rcx")) {
                     buf[curnum++] = Popr;
                     buf[curnum++] = 3;
+                    fprintf(Log, "\t\t%d %d \t\t%lu %lu\n", Popr, 3, curnum - 2, curnum - 1);
 
                 } else if (!strcmp(inhel, "rdx")) {
                     buf[curnum++] = Popr;
                     buf[curnum++] = 4;
+                    fprintf(Log, "\t\t%d %d \t\t%lu %lu\n", Popr, 4, curnum - 2, curnum - 1);
 
                 } else {
                     //printf("Just a pop...\n");
                     buf[curnum++] = Pop;
+                    fprintf(Log, "\t\t%d \t\t\t%lu\n", Pop, curnum - 1);
                 }
             }
 
         } else if (!strcmp(input, "div")) {
             buf[curnum++] = Div;
+            fprintf(Log, "     \t\t%d \t\t\t%lu\n", Div, curnum - 1);
 
         } else if (!strcmp(input, "sub")) {
             buf[curnum++] = Sub;
+            fprintf(Log, "     \t\t%d \t\t\t%lu\n", Sub, curnum - 1);
 
         } else if (!strcmp(input, "out")) {
-            buf[curnum++] = Out;;
+            buf[curnum++] = Out;
+            fprintf(Log, "     \t\t%d \t\t\t%lu\n", Out, curnum - 1);
 
         } else if (!strcmp(input, "add")) {
             buf[curnum++] = Add;
+            fprintf(Log, "     \t\t%d \t\t\t%lu\n", Add, curnum - 1);
 
         } else if (!strcmp(input, "mul")) {
             buf[curnum++] = Mul;
+            fprintf(Log, "     \t\t%d \t\t\t%lu\n", Mul, curnum - 1);
 
         } else if (!strcmp(input, "sqrt")) {
             buf[curnum++] = Sqrt;
+            fprintf(Log, "     \t\t%d \t\t\t%lu\n", Sqrt, curnum - 1);
 
         } else if (!strcmp(input, "sin")) {
             buf[curnum++] = Sin;
+            fprintf(Log, "     \t\t%d \t\t\t%lu\n", Sin, curnum - 1);
 
         } else if (!strcmp(input, "cos")) {
             buf[curnum++] = Cos;
+            fprintf(Log, "     \t\t%d \t\t\t%lu\n", Cos, curnum - 1);
 
         } else if (!strcmp(input, "in")) {
             buf[curnum++] = In;
+            fprintf(Log, "     \t\t%d \t\t\t%lu\n", In, curnum - 1);
 
         } else if (!strcmp(input, "jmp")) {
             buf[curnum++] = Jmp;
-            jmp_func(buf, &curnum, ASM);
+            jmp_func(buf, &curnum, ASM, Log);
             
         } else if (!strcmp(input, "ja")) {
             buf[curnum++] = Ja;
-            jmp_func(buf, &curnum, ASM);
+            jmp_func(buf, &curnum, ASM, Log);
             
         } else if (!strcmp(input, "jae")) {
             buf[curnum++] = Jae;
-            jmp_func(buf, &curnum, ASM);
+            jmp_func(buf, &curnum, ASM, Log);
             
         } else if (!strcmp(input, "jb")) {
             buf[curnum++] = Jb;
             //printf("curnum b = %lu\n", curnum);
-            jmp_func(buf, &curnum, ASM);
+            jmp_func(buf, &curnum, ASM, Log);
             //printf("curnum a = %lu\n", curnum);
             
         } else if (!strcmp(input, "jbe")) {
             buf[curnum++] = Jbe;
-            jmp_func(buf, &curnum, ASM);
+            jmp_func(buf, &curnum, ASM, Log);
             
         } else if (!strcmp(input, "je")) {
             buf[curnum++] = Je;
-            jmp_func(buf, &curnum, ASM);
+            jmp_func(buf, &curnum, ASM, Log);
             
         } else if (!strcmp(input, "jne")) {
             buf[curnum++] = Jne;
-            jmp_func(buf, &curnum, ASM);
+            jmp_func(buf, &curnum, ASM, Log);
             
         } else if (input[0] == ':') {
             add_mark(input, curnum);
+            fprintf(Log, "     \t\t - \t\t\t - \n");
             //curnum++;
 
         } else {
@@ -206,7 +238,7 @@ int assemb(const char *ASMfilename, const char *Bytecodefilename) {
 
     if (numundefmarks > 0) {
         printf("Next assemb\n");
-        return assemb(ASMfilename, Bytecodefilename);
+        return assemb(ASMfilename, Bytecodefilename, Logfilename);
     }
 
     printf("The assembler has completed its tasks\n");
@@ -244,7 +276,7 @@ static int add_mark(const char* input, const size_t curnum) {
     return 0;
 }
 
-static int jmp_func(int buf[], size_t *curnum, FILE *ASM) {
+static int jmp_func(int buf[], size_t *curnum, FILE *ASM, FILE *Log) {
     char inhel[MAX_COMMAND_SIZE] = {};
 
     if (fscanf(ASM, "%s", inhel) != 1) {
@@ -252,6 +284,7 @@ static int jmp_func(int buf[], size_t *curnum, FILE *ASM) {
         return -1;
 
     } else {
+        fprintf(Log, "%s ", inhel);
         int addres = search_mark_addres(inhel);
         //printf("addres = %d\n", addres);
 
@@ -266,6 +299,7 @@ static int jmp_func(int buf[], size_t *curnum, FILE *ASM) {
             buf[*curnum] = addres;
             *curnum += 1;
         }
+        fprintf(Log, "\t%d %d \t\t%lu %lu\n", buf[*curnum - 2], buf[*curnum - 1], *curnum - 2, *curnum - 1);
     }
 
     return 0;

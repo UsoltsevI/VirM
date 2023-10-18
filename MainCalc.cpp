@@ -7,8 +7,9 @@ int main() {
     const char *ASM = "ASM.txt";
     const char *Bytecode = "Bytecode.bin";
     const char *Outputfile = "Out.txt";
+    const char *Log = "Log.txt";
 
-    assemb(ASM, Bytecode);
+    assemb(ASM, Bytecode, Log);
     //disassemb(ASM, Bytecode);
     pocess(Bytecode, Outputfile);
 
