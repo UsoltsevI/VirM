@@ -8,8 +8,8 @@ int main() {
     const char *Bytecode = "Bytecode.bin";
     const char *Outputfile = "Out.txt";
 
-    //assemb(ASM, Bytecode);
-    disassemb(ASM, Bytecode);
+    assemb(ASM, Bytecode);
+    //disassemb(ASM, Bytecode);
     pocess(Bytecode, Outputfile);
 
     printf("Program comlited\n");

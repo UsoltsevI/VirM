@@ -3,16 +3,21 @@
 #include "Calc.h"
 #include "Stack.h"
 
+//#define DEBUGONP
+
 int pocess(const char *Bytecodefilename, const char *Outputfilename) {
     FILE *Outputfile = fopen(Outputfilename, "w");
 
     struct SPU spu = {};
     SPUctor(&spu, "ERRSPU.txt", "ERRORS.txt", 1, 1);
-    SPUreadbytecode(&spu, "Bytecode.txt");
+    SPUreadbytecodebin(&spu, "Bytecode.bin");
     //SPUdump(&spu);
+    //printf("spu.IP = %lu\n", spu.IP);
 
     if (spu.CS[spu.IP] != VERSION) {
-        printf("Byrecode has format not for this verion of program\n");
+        printf("Bytecode has format not for this verion of program\n");
+        printf("VERSION = %d\n", VERSION);
+        printf("spu.CS[spu.IP] = %d\n", spu.CS[spu.IP]);
         return -1;
     }
 
@@ -92,7 +97,7 @@ int pocess(const char *Bytecodefilename, const char *Outputfilename) {
                 break;
 
             case Out:
-                fprintf(Outputfile, "%d", stack_pop(&spu.stk));
+                fprintf(Outputfile, "%d ", stack_pop(&spu.stk));
                 break;
 
             case Add:
@@ -134,6 +139,113 @@ int pocess(const char *Bytecodefilename, const char *Outputfilename) {
                 }
 
                 break;
+            
+            case Jmp:
+                spu.IP++;
+
+                if (spu.CS[spu.IP] < 1) {
+                    printf("ERROR: addres after Jmp < 1\n");
+                    return -1;
+                }
+                printf("Perhaps, it is infinite loop...\n");
+                spu.IP = spu.CS[spu.IP] - 1;
+                break;
+
+            case Ja:
+                value1 = stack_pop(&spu.stk);
+                value2 = stack_pop(&spu.stk);
+                spu.IP++;
+
+                if (value2 > value1) {
+                    if (spu.CS[spu.IP] < 1) {
+                        printf("ERROR: addres after Ja < 1\n");
+                        return -1;
+                    }
+
+                    spu.IP = spu.CS[spu.IP] - 1;
+                }
+
+                break;
+
+            case Jae:
+                value1 = stack_pop(&spu.stk);
+                value2 = stack_pop(&spu.stk);
+                spu.IP++;
+
+                if (value2 >= value1) {
+                    if (spu.CS[spu.IP] < 1) {
+                        printf("ERROR: addres after Jae < 1\n");
+                        return -1;
+                    }
+
+                    spu.IP = spu.CS[spu.IP] - 1;
+                }
+
+                break;
+
+            case Jb:
+                value1 = stack_pop(&spu.stk);
+                value2 = stack_pop(&spu.stk);
+                spu.IP++;
+
+                if (value2 < value1) {
+                    if (spu.CS[spu.IP] < 1) {
+                        printf("ERROR: addres after Jb < 1\n");
+                        return -1;
+                    }
+
+                    spu.IP = spu.CS[spu.IP] - 1;
+                }
+
+                break;
+            
+            case Jbe:
+                value1 = stack_pop(&spu.stk);
+                value2 = stack_pop(&spu.stk);
+                spu.IP++;
+
+                if (value2 <= value1) {
+                    if (spu.CS[spu.IP] < 1) {
+                        printf("ERROR: addres after Jbe < 1\n");
+                        return -1;
+                    }
+
+                    spu.IP = spu.CS[spu.IP] - 1;
+                }
+
+                break;
+            
+            case Je:
+                value1 = stack_pop(&spu.stk);
+                value2 = stack_pop(&spu.stk);
+                spu.IP++;
+
+                if (value2 == value1) {
+                    if (spu.CS[spu.IP] < 1) {
+                        printf("ERROR: addres after Je < 1\n");
+                        return -1;
+                    }
+                
+                    spu.IP = spu.CS[spu.IP] - 1;
+                }
+
+                break;
+            
+            case Jne:
+                value1 = stack_pop(&spu.stk);
+                value2 = stack_pop(&spu.stk);
+                spu.IP++;
+
+                if (value2 != value1) {
+                    if (spu.CS[spu.IP] < 1) {
+                        printf("ERROR: addres after Jne < 1\n");
+                        return -1;
+                    }
+
+                    spu.IP = spu.CS[spu.IP] - 1;
+                }
+
+                break;
 
             default:
                 printf("Undefined command\n");
@@ -141,7 +253,16 @@ int pocess(const char *Bytecodefilename, const char *Outputfilename) {
                 break;
         }
         spu.IP++;
+
+#ifdef DEBUGONP
+        SPUdump(&spu);
+        printf("Press any key ro continue\n");
+        int zero = 0;
+        scanf("%d", &zero);
+#endif
+
         input = spu.CS[spu.IP];
+        //spu.IP++;
     }
 
     fclose(Outputfile);

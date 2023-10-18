@@ -4,7 +4,7 @@
 #include "Stack.h"
 
 #define MAX_COMMAND_SIZE 5
-#define VERSION 111
+#define VERSION 112
 
 enum {
     HLT  = -1,
@@ -19,8 +19,15 @@ enum {
     Sin  = 9,
     Cos  = 10,
     In   = 11,
+    Jmp  = 44,
+    Ja   = 45,
+    Jae  = 46,
+    Jb   = 47,
+    Jbe  = 48,
+    Je   = 50,
+    Jne  = 51,
     Popr = 43,
-    Pushr = 33
+    Pushr = 33,
 };
 
 struct SPU {
@@ -48,5 +55,6 @@ int SPUdtor(struct SPU *spu);
 int SPUver (struct SPU *spu);
 int SPUdump(struct SPU *spu);
 int SPUreadbytecode(struct SPU *spu, const char *bytecode_file_name);
+int SPUreadbytecodebin(struct SPU *spu, const char *bytecode_file_name);
 
 #endif //CALC_H_INCLUDED

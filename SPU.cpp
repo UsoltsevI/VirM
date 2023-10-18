@@ -150,7 +150,7 @@ int SPUdump(struct SPU *spu) {
 
     fprintf(err_file, "\n");
 
-    for (size_t i = 1; i < (spu->IP + 1) * 6; i++) 
+    for (size_t i = 1; i < (spu->IP + 1) * 7 - 1; i++) 
         fprintf(err_file, " ");
 
     fprintf(err_file, "^IP = %d\n", (int) spu->IP);
@@ -232,6 +232,7 @@ int SPUreadbytecodebin(struct SPU *spu, const char *bytecode_file_name) {
     fseek(bytecode, EOF, SEEK_END);
 
     spu->CS_capacity = ftell(bytecode);
+    spu->CS_capacity = spu->CS_capacity / sizeof(int) + 1;
 
     spu->CS = (int *) calloc(spu->CS_capacity + 1, sizeof(int));
 

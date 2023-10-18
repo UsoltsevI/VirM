@@ -2,8 +2,30 @@
 #include "Calc.h"
 #include <string.h>
 
+//#define DEBUGONA
+struct JMP {
+    const char* name;
+    int addres;
+};
+
+static const size_t maxnummark = 256; 
+static JMP arrmark[maxnummark] = {};
+static size_t nummark = 0;
+static int numundefmarks = 0;
+
+static int search_mark_addres(const char *inhel);
+static int add_mark(const char* input, const size_t curnum);
+static int jmp_func(int buf[], size_t *curnum, FILE* ASM);
+static void dump_buf(const int *buf, const size_t numcommand);
+static void create_arr();
+
 int assemb(const char *ASMfilename, const char *Bytecodefilename) {
     printf("The assembler has started performing its tasks\n");
+
+    if (numundefmarks == 0)
+        create_arr();
+
+    numundefmarks = 0;
 
     FILE *ASM = fopen(ASMfilename, "r");
     FILE *Bytecode = fopen(Bytecodefilename, "wb");
@@ -34,18 +56,17 @@ int assemb(const char *ASMfilename, const char *Bytecodefilename) {
     
     check = fscanf(ASM, "%s", input);
 
-    while ((check != EOF) && (check == 1) && (curnum < numcommand)) {
+    while ((check != EOF) && (check == 1) && (curnum < numcommand + 2)) {
         if (!strcmp(input, "HLT")) {
+            //printf("HLT curnum = %d\n", curnum);
             buf[curnum++] = HLT;
+            
 
         } else if (!strcmp(input, "push")) {
             int value = 0;
-            check = fscanf(ASM, "%d", &value);
 
-            if (check != 1) {
-                check = fscanf(ASM, "%s", inhel);
-
-                if (check != 1) {
+            if (fscanf(ASM, "%d", &value) != 1) {
+                if (fscanf(ASM, "%s", inhel) != 1) {
                     printf("ERROR: check != 1 at push\n");
 
                 } else {
@@ -76,10 +97,9 @@ int assemb(const char *ASMfilename, const char *Bytecodefilename) {
             }
         
         } else if (!strcmp(input, "pop")) {
-            check = fscanf(ASM, "%s", inhel);
-
-            if (check != 1) {
+            if (fscanf(ASM, "%s", inhel) != 1) {
                 printf("ERROR: check != 1 at pop\n");
+
             } else {
                 if (!strcmp(inhel, "rax")) {
                     buf[curnum++] = Popr;
@@ -130,20 +150,141 @@ int assemb(const char *ASMfilename, const char *Bytecodefilename) {
         } else if (!strcmp(input, "in")) {
             buf[curnum++] = In;
 
+        } else if (!strcmp(input, "jmp")) {
+            buf[curnum++] = Jmp;
+            jmp_func(buf, &curnum, ASM);
+            
+        } else if (!strcmp(input, "ja")) {
+            buf[curnum++] = Ja;
+            jmp_func(buf, &curnum, ASM);
+            
+        } else if (!strcmp(input, "jae")) {
+            buf[curnum++] = Jae;
+            jmp_func(buf, &curnum, ASM);
+            
+        } else if (!strcmp(input, "jb")) {
+            buf[curnum++] = Jb;
+            //printf("curnum b = %lu\n", curnum);
+            jmp_func(buf, &curnum, ASM);
+            //printf("curnum a = %lu\n", curnum);
+            
+        } else if (!strcmp(input, "jbe")) {
+            buf[curnum++] = Jbe;
+            jmp_func(buf, &curnum, ASM);
+            
+        } else if (!strcmp(input, "je")) {
+            buf[curnum++] = Je;
+            jmp_func(buf, &curnum, ASM);
+            
+        } else if (!strcmp(input, "jne")) {
+            buf[curnum++] = Jne;
+            jmp_func(buf, &curnum, ASM);
+            
+        } else if (input[0] == ':') {
+            add_mark(input, curnum);
+            //curnum++;
+
         } else {
             buf[curnum++] = EOF;
             printf("Undefined command\n");
             printf("check = %d\n", check);
             printf("input = %s\n", input);
+            printf("curnum = %lu\n", curnum);
         }
  
         check = fscanf(ASM, "%s", input);
     }
 
-    fwrite(buf, sizeof(int), numcommand, Bytecode);
+    //printf("%lu\n", fwrite(buf, sizeof(int), numcommand + 2, Bytecode));
+    fwrite(buf, sizeof(int), numcommand + 2, Bytecode);
     fclose(Bytecode);
     fclose(ASM);
+
+#ifdef DEBUGONA
+    dump_buf(buf, numcommand);
+#endif
+
+    if (numundefmarks > 0) {
+        printf("Next assemb\n");
+        return assemb(ASMfilename, Bytecodefilename);
+    }
+
     printf("The assembler has completed its tasks\n");
 
     return 0;
+}
+
+static int search_mark_addres(const char *inhel) {
+    //printf("inhel = %s\n", inhel);
+    for (size_t i = 0; i < nummark; i++) 
+        if (strcmp(arrmark[i].name, inhel)) 
+            return arrmark[i].addres;
+
+    return -1;
+}
+
+static int add_mark(const char* input, const size_t curnum) {
+    int check = search_mark_addres(input);
+
+    if (check != -1) {
+        arrmark[check].addres = (int) curnum;
+
+    } else {
+        arrmark[nummark].name   = input;
+        arrmark[nummark].addres = curnum;
+        nummark++;
+        numundefmarks++;
+
+        if (nummark >= maxnummark) {
+            printf("The end of the marks buffer\n");
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
+static int jmp_func(int buf[], size_t *curnum, FILE *ASM) {
+    char inhel[MAX_COMMAND_SIZE] = {};
+
+    if (fscanf(ASM, "%s", inhel) != 1) {
+        printf("Failed fscanf after Jmp");
+        return -1;
+
+    } else {
+        int addres = search_mark_addres(inhel);
+        //printf("addres = %d\n", addres);
+
+        if (addres == -1) {
+            add_mark(inhel, addres);
+            numundefmarks++;
+            //printf("numundefmarks++\n");
+
+        } else {
+            //printf("buf[*curnum] = %d\n", buf[*curnum]);
+            //printf("buf[*curnum - 1] = %d\n", buf[*curnum - 1]);
+            buf[*curnum] = addres;
+            *curnum += 1;
+        }
+    }
+
+    return 0;
+}
+
+static void dump_buf(const int *buf, const size_t numcommand) {
+    printf("buf: { \n");
+
+    for (size_t i = 0; i < numcommand + 2; i++) {
+        printf("%.3lu ", i);
+    }
+    printf("\n");
+    for (size_t i = 0; i < numcommand + 2; i++){
+        printf("%3d ", buf[i]);
+    }
+    printf("\n}\n");
+}
+
+static void create_arr() {
+    for (size_t i = 0; i < maxnummark; i++)
+        arrmark[i].addres = -1;
 }
