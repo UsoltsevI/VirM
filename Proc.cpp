@@ -10,7 +10,7 @@ int pocess(const char *Bytecodefilename, const char *Outputfilename) {
 
     struct SPU spu = {};
     SPUctor(&spu, "ERRSPU.txt", "ERRORS.txt", 1, 1);
-    SPUreadbytecodebin(&spu, "Bytecode.bin");
+    SPUreadbytecodebin(&spu, Bytecodefilename);
     //SPUdump(&spu);
     //printf("spu.IP = %lu\n", spu.IP);
 

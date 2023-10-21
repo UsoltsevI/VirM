@@ -28,11 +28,11 @@ int assemb(const char *ASMfilename, const char *Bytecodefilename, const char *Lo
     numundefmarks = 0;
 
     FILE *ASM = fopen(ASMfilename, "r");
-    FILE *Bytecode = fopen(Bytecodefilename, "wb");
-    FILE *Log = fopen(Logfilename, "w");
+    FILE *Bytecode = fopen(Bytecodefilename, "wb");//еереместить куда надо
+    FILE *Log = fopen(Logfilename, "w");//библиотека логирования
 
     char input[MAX_COMMAND_SIZE] = {};
-    char inhel[MAX_COMMAND_SIZE] = {};
+    char inhel[MAX_COMMAND_SIZE] = {}; // naming, onegin lib
     int version = -1, numcommand = -1;
     int check = fscanf(ASM, "%d", &version);
     
@@ -53,7 +53,7 @@ int assemb(const char *ASMfilename, const char *Bytecodefilename, const char *Lo
     buf[0] = VERSION;
     buf[1] = numcommand;
 
-    fprintf(Log, "VERSION: %d\n", VERSION);
+    fprintf(Log, "VERSION: %d\n", VERSION); // LOG("VERSIN %d", version)
     fprintf(Log, "numcommand = %d\n", numcommand);
 
     size_t curnum = 2;

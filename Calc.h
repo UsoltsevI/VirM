@@ -8,7 +8,7 @@
 
 enum {
     HLT  = -1,
-    Push = 1,
+    Push = 1, // push rax + 10; push rax[10]
     Pop  = 2,
     Div  = 3,
     Sub  = 4,
@@ -43,7 +43,7 @@ struct SPU {
     bool is_ctor;
     bool is_dtor;
 };
-
+// asssembly, ..., process
 int assemb(const char *ASMfilename, const char *Bytecodefilename, const char *Logfilename);
 
 int disassemb(const char *ASMfilename, const char *Bytecodefilename);

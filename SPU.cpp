@@ -229,9 +229,11 @@ int SPUreadbytecodebin(struct SPU *spu, const char *bytecode_file_name) {
         return -1;
     }
 
-    fseek(bytecode, EOF, SEEK_END);
+    fseek(bytecode, EOF, SEEK_END);//addres = fseek(...)
 
     spu->CS_capacity = ftell(bytecode);
+    fseek(bytecode, 0, SEEK_SET);
+
     spu->CS_capacity = spu->CS_capacity / sizeof(int) + 1;
 
     spu->CS = (int *) calloc(spu->CS_capacity + 1, sizeof(int));
@@ -240,8 +242,6 @@ int SPUreadbytecodebin(struct SPU *spu, const char *bytecode_file_name) {
         printf("Failed callocation for spu->CS at SPUreadbytecodebin\n");
         return -1;
     }
-
-    fseek(bytecode, 0, SEEK_SET);
 
     fread(spu->CS, sizeof(int), spu->CS_capacity, bytecode);
 
