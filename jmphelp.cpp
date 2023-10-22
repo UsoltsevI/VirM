@@ -1,0 +1,7 @@
+DEF_JMP("jmp", Jmp)
+DEF_JMP("ja",  Ja)
+DEF_JMP("jae", Jae)
+DEF_JMP("jb",  Jb)
+DEF_JMP("jbe", Jbe)
+DEF_JMP("je",  Je)
+DEF_JMP("jne", Jne)

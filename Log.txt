@@ -1,21 +1,56 @@
+NUM_ASSEMBLY: 0
+SIGNATURE: ASMU
 VERSION: 112
-numcommand = 26
-	 Name          Code       Addres
-	in ASM        for VM     in Bytecode buf
-	   in      		11 			2
-	  pop rax 		43 1 		3 4
-	   in      		11 			5
-	  pop rbx 		43 2 		6 7
-	   in      		11 			8
-	  pop rcx 		43 3 		9 10
-	:loop      		 - 			 - 
-	 push rax 		33 1 		11 12
-	  out      		5 			13
-	 push rax 		33 1 		14 15
-	 push rcx 		33 3 		16 17
-	  add      		6 			18
-	  pop rax 		43 1 		19 20
-	 push rax 		33 1 		21 22
-	 push rbx 		33 2 		23 24
-	   jb :loop 	47 11 		25 26
-	  HLT      		-1 			27
+numcommand = 28
+numundefmarks = 0
+	 Name              Code       Addres
+	in ASM            for VM     in Bytecode buf
+-------------------------------------------------
+       in               11            2
+      pop rax           43 1          3 4
+       in               11            5
+      pop rbx           43 2          6 7
+       in               11            8
+      pop rcx           43 3          9 10
+    :loop 				 - 			  - 
+     push rax           33 1         11 12
+      out                5           13
+     push rax           33 1         14 15
+     push rcx           33 3         16 17
+      add                6           18
+      pop rax           43 1         19 20
+     push rax           33 1         21 22
+     push rbx           33 2         23 24
+       jb :loop         47 11        25 26
+      jmp :endi         44 -1        27 28
+    :endi 				 - 			  - 
+      HLT               -1           29
+
+NUM_ASSEMBLY: 1
+SIGNATURE: ASMU
+VERSION: 112
+numcommand = 28
+numundefmarks = 0
+	 Name              Code       Addres
+	in ASM            for VM     in Bytecode buf
+-------------------------------------------------
+       in               11            2
+      pop rax           43 1          3 4
+       in               11            5
+      pop rbx           43 2          6 7
+       in               11            8
+      pop rcx           43 3          9 10
+    :loop 				 - 			  - 
+     push rax           33 1         11 12
+      out                5           13
+     push rax           33 1         14 15
+     push rcx           33 3         16 17
+      add                6           18
+      pop rax           43 1         19 20
+     push rax           33 1         21 22
+     push rbx           33 2         23 24
+       jb :loop         47 11        25 26
+      jmp :endi         44 29        27 28
+    :endi 				 - 			  - 
+      HLT               -1           29
+end

@@ -5,7 +5,7 @@
 
 //#define DEBUGONP
 
-int pocess(const char *Bytecodefilename, const char *Outputfilename) {
+int process(const char *Bytecodefilename, const char *Outputfilename) {
     FILE *Outputfile = fopen(Outputfilename, "w");
 
     struct SPU spu = {};

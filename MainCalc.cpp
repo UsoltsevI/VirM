@@ -9,9 +9,9 @@ int main() {
     const char *Outputfile = "Out.txt";
     const char *Log = "Log.txt";
 
-    assemb(ASM, Bytecode, Log);
+    assembly(ASM, Bytecode, Log);
     //disassemb(ASM, Bytecode);
-    pocess(Bytecode, Outputfile);
+    //process(Bytecode, Outputfile);
 
     printf("Program comlited\n");
     return 0;

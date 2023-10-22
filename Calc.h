@@ -4,6 +4,7 @@
 #include "Stack.h"
 
 #define MAX_COMMAND_SIZE 5
+#define SIGNATURE "ASMU"
 #define VERSION 112
 
 enum {
@@ -44,11 +45,11 @@ struct SPU {
     bool is_dtor;
 };
 // asssembly, ..., process
-int assemb(const char *ASMfilename, const char *Bytecodefilename, const char *Logfilename);
+int assembly(const char *ASMfilename, const char *Bytecodefilename, const char *Logfilename);
 
 int disassemb(const char *ASMfilename, const char *Bytecodefilename);
 
-int pocess(const char *Bytecodefilename, const char *Outputfilename);
+int process(const char *Bytecodefilename, const char *Outputfilename);
 
 int SPUctor(struct SPU *spu, const char *spu_err_file_name, const char *err_file_name, size_t beg_CS_capacity, size_t beg_stk_capacity);
 int SPUdtor(struct SPU *spu);

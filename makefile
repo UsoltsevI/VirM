@@ -30,3 +30,9 @@ cleanout:
 
 cleanerr:
 	rm -f ERRORS.txt ERR_SPU.txt
+
+cleanas:
+	rm -f Assemb.o
+
+cleanproc:
+	rm -f Proc.o 
