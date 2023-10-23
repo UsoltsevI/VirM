@@ -4,9 +4,12 @@ MainCalc.o
 Proc.o
 SPU.o
 Stack.o
+ReadStrings.o
+ReadTest.cpp
+A.exe
 Out.txt
 ERRORS.txt
 ERRSPU.txt
 ASM.txt
 Bytecode.txt
-Log.txt
+LLL.txt

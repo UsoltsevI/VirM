@@ -2,7 +2,8 @@
 #include "Calc.h"
 #include <string.h>
 #include "Log.h"
-#define DEBUGONA
+
+//#define DEBUGONA
 
 struct JMP {
     char name[MAX_COMMAND_SIZE];
@@ -16,36 +17,39 @@ static int numundefmarks = 0;
 
 static int search_mark(const char *inhel);
 static int add_mark(const char* input, const size_t curnum);
-static int jmp_func(int buf[], size_t *curnum, FILE* ASM);
+static int jmp_func(struct string *asm_data, int buf[], size_t *cur_str, size_t *curnum);
 static void dump_buf(const int *buf, const size_t numcommand);
 static void create_arr();
-static void put_pop_or_push(const char *input, int buf[], size_t *curnum, FILE* ASM);
+static void put_pop_or_push(struct string *asm_data, int buf[], size_t *cur_str, size_t *curnum);
 static void write_bytecode(const int *buf, const char *Bytecodefilename, const size_t numcommand);
 
 int assembly(const char *ASMfilename, const char *Bytecodefilename, const char *Logfilename) {
     printf("The assembler has started performing its tasks\n");
 
+    static struct string *asm_data = {};
+    static char * asm_buf = {};
+    static size_t num_str = 0;
+
     if (numundefmarks == 0) {
         create_arr();
+        read_strings(&asm_data, &num_str, &asm_buf, ASMfilename);
+        change_str_ending_buf(asm_buf); 
         LOG_O;
     }
 
-    numundefmarks = 0;
+    size_t cur_str = 0;
 
-    FILE *ASM = fopen(ASMfilename, "r");
-
-    char input[MAX_COMMAND_SIZE] = {};
-    char inhel[MAX_COMMAND_SIZE] = {}; // naming, onegin lib
-    int version = -1, numcommand = -1;
-    int check = fscanf(ASM, "%s", input);
-    check = fscanf(ASM, "%d", &version);
-    
-    if (strcmp(input, SIGNATURE)) {
+    if (str_cmp(asm_data[cur_str++], SIGNATURE)) {
         printf("Incorrect ASM signature\n");
         printf("right signature: %s\n", SIGNATURE);
-        printf("Entered signature: %s\n", input);
+        printf("Entered signature: %s\n", asm_data[cur_str - 1].str);
         return -1;
     }
+
+    int version    = 0;
+    int numcommand = 0;
+    convert_str_to_int(asm_data[cur_str++], &version);
+    convert_str_to_int(asm_data[cur_str++], &numcommand);
 
     if (version != VERSION) {
         printf("Incorrect ASM version\n");
@@ -53,8 +57,6 @@ int assembly(const char *ASMfilename, const char *Bytecodefilename, const char *
         printf("Entered version: %d\n", version);
         return -1;
     }
-
-    check = fscanf(ASM, "%d", &numcommand);
     
     int *buf = (int *) calloc(numcommand + 2, sizeof(int));
 
@@ -63,68 +65,59 @@ int assembly(const char *ASMfilename, const char *Bytecodefilename, const char *
         return -1;
     }
 
-    buf[0] = VERSION;
-    buf[1] = numcommand;
+    size_t curnum = 0;
+    buf[curnum++] = VERSION;
+    buf[curnum++] = numcommand;
 
     LOG_T;
 
-    size_t curnum = 2;
-    
-    check = fscanf(ASM, "%s", input);
+    numundefmarks = 0; 
 
-    while ((check != EOF) && (check == 1) && (curnum < numcommand + 2)) {
-        LOG_1(input);
+    while ((curnum < numcommand + 2) && (cur_str < num_str)) {
+        LOG_1(asm_data[cur_str].str);
 
-        if (!strcmp(input, "HLT")) {
+        if (!str_cmp(asm_data[cur_str], "HLT")) {
             buf[curnum++] = HLT;
             LOG_2 (HLT);
             
-        } else if (!strcmp(input, "push")) {
-            put_pop_or_push(input, buf, &curnum, ASM);
+        } else if (!str_cmp(asm_data[cur_str], "push")) {
+            put_pop_or_push(asm_data, buf, &cur_str, &curnum);
         
-        } else if (!strcmp(input, "pop")) {
-            put_pop_or_push(input, buf, &curnum, ASM);
+        } else if (!str_cmp(asm_data[cur_str], "pop")) {
+            put_pop_or_push(asm_data, buf, &cur_str, &curnum);
         }
 
         //code generation for several commands
-#define DEF_CMD(name, number)           \
-    else if (!strcmp(input, name)) {    \
-        buf[curnum++] = number;         \
-        LOG_2(number);                  \
+#define DEF_CMD(name, number)                       \
+    else if (!str_cmp(asm_data[cur_str], name)) {   \
+        buf[curnum++] = number;                     \
+        LOG_2(number);                              \
     }
         #include "assembhelp.cpp"
-
 #undef DEF_CMD 
 
        //code generation for jmp
-#define DEF_JMP(name, number)               \
-    else if (!strcmp(input, name)) {        \
-        buf[curnum++] = number;             \
-        jmp_func(buf, &curnum, ASM);        \
+#define DEF_JMP(name, number)                       \
+    else if (!str_cmp(asm_data[cur_str], name)) {   \
+        buf[curnum++] = number;                     \
+        jmp_func(asm_data, buf, &cur_str, &curnum); \
     }
-
         #include "jmphelp.cpp"
-
 #undef DEF_JMP 
 
-        else if (input[0] == ':') {
-            //printf("\nmark\n");
-            add_mark(input, curnum);
-            LOG_M(input);
-            //printf("\n");
+        else if (asm_data[cur_str].str[0] == ':') {
+            add_mark(asm_data[cur_str].str, curnum);
+            LOG_M(asm_data[cur_str].str);
 
         } else {
             buf[curnum++] = EOF;
             printf("Undefined command\n");
-            printf("check = %d\n", check);
-            printf("input = %s\n", input);
+            printf("input = %s\n", asm_data[cur_str].str);
             printf("curnum = %lu\n", curnum);
         }
  
-        check = fscanf(ASM, "%s", input);
+        cur_str++;
     }
-
-    fclose(ASM);
 
     write_bytecode(buf, Bytecodefilename, numcommand);
 
@@ -140,6 +133,8 @@ int assembly(const char *ASMfilename, const char *Bytecodefilename, const char *
     }
     
     printf("The assembler has completed its tasks\n");
+
+    clean_strings(&asm_data, &asm_buf);
 
     LOG_C;
 
@@ -158,7 +153,7 @@ static int search_mark(const char *inhel) {
         return -1;
     }
     
-    for (size_t i = 0; i < nummark; i++)    
+    for (size_t i = 0; i < nummark; i++)
         if (!strcmp(arrmark[i].name, inhel)) 
             return i;
 
@@ -184,25 +179,20 @@ static int add_mark(const char* input, const size_t curnum) {
     return 0;
 }
 
-static int jmp_func(int buf[], size_t *curnum, FILE *ASM) {
-    char inhel[MAX_COMMAND_SIZE] = {};
+static int jmp_func(struct string *asm_data, int buf[], size_t *cur_str, size_t *curnum) {
+    (*cur_str)++;
 
-    if (fscanf(ASM, "%s", inhel) != 1) {
-        printf("Failed fscanf after Jmp");
-        return -1;
+    LOG_PN(asm_data[*cur_str].str);
 
-    } else {
-        fprintf(Log, "%s ", inhel);
-        int check = search_mark(inhel);
+    int check = search_mark(asm_data[*cur_str].str);
 
-        if (arrmark[check].addres == -1) 
-            numundefmarks++;
+    if (arrmark[check].addres == -1) 
+        numundefmarks++;
 
-        buf[*curnum] = arrmark[check].addres;
-        *curnum += 1;
+    buf[*curnum] = arrmark[check].addres;
+    (*curnum)++;
 
-        LOG_J;
-    }
+    LOG_J;
     
     return 0;
 }
@@ -226,60 +216,57 @@ static void create_arr() {
         arrmark[i].addres = -1;
 }
 
-static void put_pop_or_push(const char *input, int buf[], size_t *curnum, FILE* ASM) {
+static void put_pop_or_push(struct string *asm_data, int buf[], size_t *cur_str, size_t *curnum) {
     int Enum = 0;
 
-    if (!strcmp(input, "pop")) {
+    if (!str_cmp(asm_data[*cur_str], "pop")) {
         Enum = Pop;
 
-    } else if (!strcmp(input, "push")) {
+    } else if (!str_cmp(asm_data[*cur_str], "push")) {
         Enum = Push;
 
     } else {
         printf("Undefined command in put_pop_or_push\n");
-        printf("input = %s\n", input);
+        printf("input = %s\n", asm_data[*cur_str].str);
     }
 
-    int value = 0;
-    char inhel[MAX_COMMAND_SIZE] = {};
+    (*cur_str)++;
 
-    if (fscanf(ASM, "%d", &value) != 1) {
-        if (fscanf(ASM, "%s", inhel) != 1) {
-            printf("ERROR: check != 1 at push\n");
+    int value = 0;
+
+    if (convert_str_to_int(asm_data[*cur_str], &value) == -1) {
+        if (Enum == Pop) {
+            Enum = Popr;
+
+        } else if (Enum == Push) {
+            Enum = Pushr;
+        } 
+
+        LOG_PN(asm_data[*cur_str].str);
+        if (!str_cmp(asm_data[*cur_str], "rax")) {
+            buf[(*curnum)++] = Enum, 
+            buf[(*curnum)++] = 1;
+            LOG_4X (Enum, 1);
+
+        } else if (!str_cmp(asm_data[*cur_str], "rbx")) {
+            buf[(*curnum)++] = Enum;
+            buf[(*curnum)++] = 2;
+            LOG_4X (Enum, 2);
+
+        } else if (!str_cmp(asm_data[*cur_str], "rcx")) {
+            buf[(*curnum)++] = Enum;
+            buf[(*curnum)++] = 3;
+            LOG_4X (Enum, 3);
+
+        } else if (!str_cmp(asm_data[*cur_str], "rdx")) {
+            buf[(*curnum)++] = Enum;
+            buf[(*curnum)++] = 4;
+            LOG_4X (Enum, 4);
 
         } else {
-            if (!strcmp(input, "pop")) {
-                Enum = Popr;
-
-            } else if (!strcmp(input, "push")) {
-                Enum = Pushr;
-            } 
-
-            fprintf(Log, "%s ", inhel);
-            if (!strcmp(inhel, "rax")) {
-                buf[(*curnum)++] = Enum, 
-                buf[(*curnum)++] = 1;
-                LOG_4X (Enum, 1);
-
-            } else if (!strcmp(inhel, "rbx")) {
-                buf[(*curnum)++] = Enum;
-                buf[(*curnum)++] = 2;
-                LOG_4X (Enum, 2);
-
-            } else if (!strcmp(inhel, "rcx")) {
-                buf[(*curnum)++] = Enum;
-                buf[(*curnum)++] = 3;
-                LOG_4X (Enum, 3);
-
-            } else if (!strcmp(inhel, "rdx")) {
-                buf[(*curnum)++] = Enum;
-                buf[(*curnum)++] = 4;
-                LOG_4X (Enum, 4);
-
-            } else {
-                printf("Undefined command after %s\n", input);
-            }
+            printf("Undefined command after %s\n", asm_data[*cur_str].str);
         }
+
     } else if (Enum == Push) {
         buf[(*curnum)++] = Enum;
         buf[(*curnum)++] = value;

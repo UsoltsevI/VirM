@@ -2,6 +2,7 @@
 #define CALC_H_INCLUDED
 
 #include "Stack.h"
+#include "ReadStrings.h"
 
 #define MAX_COMMAND_SIZE 5
 #define SIGNATURE "ASMU"

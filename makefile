@@ -1,5 +1,5 @@
-all: Proc.o Stack.o MainCalc.o Disassemb.o Assemb.o SPU.o
-	 g++ Proc.o Stack.o MainCalc.o Disassemb.o Assemb.o SPU.o -o A.exe
+all: Proc.o Stack.o MainCalc.o Disassemb.o Assemb.o SPU.o ReadStrings.o
+	 g++ Proc.o Stack.o MainCalc.o Disassemb.o Assemb.o SPU.o ReadStrings.o -o A.exe
 
 Proc.o: Proc.cpp
 	g++ Proc.cpp -c
@@ -18,6 +18,9 @@ Assemb.o: Assemb.cpp
 
 SPU.o: SPU.cpp 
 	g++ SPU.cpp -c
+
+ReadStrings.o: ReadStrings.cpp
+	g++ ReadStrings.cpp -c
 
 clean: 
 	rm -f Proc.o Stack.o MainCalc.o Disassemb.o Assemb.o SPU.o

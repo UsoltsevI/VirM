@@ -16,18 +16,19 @@ int NUM_ASSEMBLY = 0;
                 fprintf(Log, "VERSION: %d\n", VERSION);                             \
                 fprintf(Log, "numcommand = %d\n", numcommand);                      \
                 fprintf(Log, "numundefmarks = %d\n", numundefmarks);                  \
-                fprintf(Log, "\t Name              Code       Addres\n");           \
-                fprintf(Log, "\tin ASM            for VM     in Bytecode buf\n");   \
-                fprintf(Log, "-------------------------------------------------\n");
+                fprintf(Log, "    Name              Code             Addres\n");           \
+                fprintf(Log, "    in ASM            for VM           in Bytecode buf\n");   \
+                fprintf(Log, "-------------------------------------------------------\n");
 
-#define LOG_P(a)        fprintf(Log, "%s\n", a)
-#define LOG_2(a)        fprintf(Log, "%16d %12lu\n", a, curnum - 1)
-#define LOG_2X(a)       fprintf(Log, "%16d %12lu\n", a, *curnum - 1)
-#define LOG_4(a, b)     fprintf(Log, "%12d %d %10lu %lu\n", a, b, curnum - 2, curnum - 1)
-#define LOG_4X(a, b)    fprintf(Log, "%12d %d %10lu %lu\n", a, b, *curnum - 2, *curnum - 1)
-#define LOG_1(a)        fprintf(Log, "%9s ", a)
-#define LOG_M(a)        fprintf(Log, "\t\t\t\t - \t\t\t  - \n")
-#define LOG_J           fprintf(Log, "%10d %d %9lu %lu\n", buf[*curnum - 2], buf[*curnum - 1], *curnum - 2, *curnum - 1);
+#define LOG_P(a)        fprintf(Log, "%6s\n", a)
+#define LOG_PN(a)       fprintf(Log, "%6s", a)
+#define LOG_2(a)        fprintf(Log, "%18d %15lu\n", a, curnum - 1)
+#define LOG_2X(a)       fprintf(Log, "%18d %15lu\n", a, *curnum - 1)
+#define LOG_4(a, b)     fprintf(Log, "%12d %4d %10lu %4lu\n", a, b, curnum - 2, curnum - 1)
+#define LOG_4X(a, b)    fprintf(Log, "%12d %4d %10lu %4lu\n", a, b, *curnum - 2, *curnum - 1)
+#define LOG_1(a)        fprintf(Log, "%6s ", a)
+#define LOG_M(a)        fprintf(Log, "%18c %15c \n", '-', '-');
+#define LOG_J           fprintf(Log, "%12d %4d %10lu %4lu\n", buf[*curnum - 2], buf[*curnum - 1], *curnum - 2, *curnum - 1);
 #define LOG_N           fprintf(Log, "\n");
 #define LOG_C           fprintf(Log, "end\n"); \
                         fclose(Log);
