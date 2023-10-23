@@ -39,24 +39,16 @@ int assembly(const char *ASMfilename, const char *Bytecodefilename, const char *
 
     size_t cur_str = 0;
 
-    if (str_cmp(asm_data[cur_str++], SIGNATURE)) {
-        printf("Incorrect ASM signature\n");
-        printf("right signature: %s\n", SIGNATURE);
-        printf("Entered signature: %s\n", asm_data[cur_str - 1].str);
+    if (check_signature(asm_data[cur_str++].str))
         return -1;
-    }
 
     int version    = 0;
     int numcommand = 0;
     convert_str_to_int(asm_data[cur_str++], &version);
     convert_str_to_int(asm_data[cur_str++], &numcommand);
 
-    if (version != VERSION) {
-        printf("Incorrect ASM version\n");
-        printf("Right version: %d\n", VERSION);
-        printf("Entered version: %d\n", version);
+    if (check_version(version))
         return -1;
-    }
     
     int *buf = (int *) calloc(numcommand + 2, sizeof(int));
 
@@ -66,6 +58,7 @@ int assembly(const char *ASMfilename, const char *Bytecodefilename, const char *
     }
 
     size_t curnum = 0;
+
     buf[curnum++] = VERSION;
     buf[curnum++] = numcommand;
 
@@ -87,7 +80,7 @@ int assembly(const char *ASMfilename, const char *Bytecodefilename, const char *
             put_pop_or_push(asm_data, buf, &cur_str, &curnum);
         }
 
-        //code generation for several commands
+    //code generation for several commands
 #define DEF_CMD(name, number)                       \
     else if (!str_cmp(asm_data[cur_str], name)) {   \
         buf[curnum++] = number;                     \
@@ -96,7 +89,7 @@ int assembly(const char *ASMfilename, const char *Bytecodefilename, const char *
         #include "assembhelp.cpp"
 #undef DEF_CMD 
 
-       //code generation for jmp
+    //code generation for jmp
 #define DEF_JMP(name, number)                       \
     else if (!str_cmp(asm_data[cur_str], name)) {   \
         buf[curnum++] = number;                     \
@@ -175,6 +168,28 @@ static int add_mark(const char* input, const size_t curnum) {
 
     strcpy(arrmark[check].name, input);
     arrmark[check].addres = curnum;
+
+    return 0;
+}
+
+int check_version(const int version) {
+    if (version != VERSION) {
+        printf("Incorrect ASM version\n");
+        printf("Right version: %d\n", VERSION);
+        printf("Entered version: %d\n", version);
+        return -1;
+    }
+
+    return 0;
+}
+
+int check_signature(const char *signature) {
+    if (strcmp(signature, SIGNATURE)) {
+        printf("Incorrect ASM signature\n");
+        printf("right signature: %s\n", SIGNATURE);
+        printf("Entered signature: %s\n", signature);
+        return -1;
+    }
 
     return 0;
 }

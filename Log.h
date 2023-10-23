@@ -30,7 +30,7 @@ int NUM_ASSEMBLY = 0;
 #define LOG_M(a)        fprintf(Log, "%18c %15c \n", '-', '-');
 #define LOG_J           fprintf(Log, "%12d %4d %10lu %4lu\n", buf[*curnum - 2], buf[*curnum - 1], *curnum - 2, *curnum - 1);
 #define LOG_N           fprintf(Log, "\n");
-#define LOG_C           fprintf(Log, "end\n"); \
+#define LOG_C           fprintf(Log, "\nEND\n"); \
                         fclose(Log);
 
 #else 

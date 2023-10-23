@@ -47,6 +47,8 @@ struct SPU {
 };
 // asssembly, ..., process
 int assembly(const char *ASMfilename, const char *Bytecodefilename, const char *Logfilename);
+int check_signature(const char * signature);
+int check_version(const int version);
 
 int disassemb(const char *ASMfilename, const char *Bytecodefilename);
 
