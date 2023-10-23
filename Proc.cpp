@@ -12,7 +12,6 @@ int process(const char *Bytecodefilename, const char *Outputfilename) {
     SPUctor(&spu, "ERRSPU.txt", "ERRORS.txt", 1, 1);
     SPUreadbytecodebin(&spu, Bytecodefilename);
     //SPUdump(&spu);
-    //printf("spu.IP = %lu\n", spu.IP);
 
     if (spu.CS[spu.IP] != VERSION) {
         printf("Bytecode has format not for this verion of program\n");
@@ -39,17 +38,8 @@ int process(const char *Bytecodefilename, const char *Outputfilename) {
             case Pushr:
                 spu.IP++;
 
-                if (spu.CS[spu.IP] == 1) {
-                    stack_push(&spu.stk, spu.rax);
-
-                } else if (spu.CS[spu.IP] == 2) {
-                    stack_push(&spu.stk, spu.rbx);
-
-                } else if (spu.CS[spu.IP] == 3) {
-                    stack_push(&spu.stk, spu.rcx);
-
-                } else if (spu.CS[spu.IP] == 4) {
-                    stack_push(&spu.stk, spu.rdx);
+                if ((0 < spu.CS[spu.IP]) && (spu.CS[spu.IP] <= num_reg)) {
+                    stack_push(&spu.stk, spu.reg[spu.CS[spu.IP]]);
 
                 } else {
                     printf("Undefined command after Pushr\n");
@@ -65,17 +55,8 @@ int process(const char *Bytecodefilename, const char *Outputfilename) {
             case Popr:
                 spu.IP++;
 
-                if (spu.CS[spu.IP] == 1) {
-                    spu.rax = stack_pop(&spu.stk);
-
-                } else if (spu.CS[spu.IP] == 2) {
-                    spu.rbx = stack_pop(&spu.stk);
-
-                } else if (spu.CS[spu.IP] == 3) {
-                    spu.rcx = stack_pop(&spu.stk);
-
-                } else if (spu.CS[spu.IP] == 4) {
-                    spu.rdx = stack_pop(&spu.stk);
+                if ((0 < spu.CS[spu.IP]) && (spu.CS[spu.IP] <= num_reg)) {
+                    spu.reg[spu.CS[spu.IP]] = stack_pop(&spu.stk);
 
                 } else {
                     printf("Undefined command after Popr\n");
@@ -147,7 +128,9 @@ int process(const char *Bytecodefilename, const char *Outputfilename) {
                     printf("ERROR: addres after Jmp < 1\n");
                     return -1;
                 }
-                printf("Perhaps, it is infinite loop...\n");
+                //if (spu.CS[spu.IP] - 1 < spu.IP)
+                //    printf("Perhaps it is an infinite loop...\n");
+
                 spu.IP = spu.CS[spu.IP] - 1;
                 break;
 
@@ -262,7 +245,6 @@ int process(const char *Bytecodefilename, const char *Outputfilename) {
 #endif
 
         input = spu.CS[spu.IP];
-        //spu.IP++;
     }
 
     fclose(Outputfile);

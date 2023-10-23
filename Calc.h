@@ -7,6 +7,8 @@
 #define MAX_COMMAND_SIZE 5
 #define SIGNATURE "ASMU"
 #define VERSION 112
+const unsigned num_reg = 4;
+const unsigned ram_capacity = 100;
 
 enum {
     HLT  = -1,
@@ -34,10 +36,8 @@ enum {
 
 struct SPU {
     struct struc_stack stk;
-    TypeElem rax;
-    TypeElem rbx;
-    TypeElem rcx;
-    TypeElem rdx;
+    TypeElem reg[num_reg];
+    char RAM[ram_capacity];
     int *CS;
     size_t IP;
     size_t CS_capacity;

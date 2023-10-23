@@ -22,10 +22,12 @@ int SPUctor(struct SPU *spu, const char *spu_err_file_name, const char *err_file
         return -1;
     }
 
-    spu->rax = 0;
-    spu->rbx = 0;
-    spu->rcx = 0;
-    spu->rdx = 0;
+    for (int i = 0; i < num_reg; i++) 
+        spu->reg[i] = 0;
+
+    for (int i = 0; i < ram_capacity; i++)
+        spu->RAM[i] = 0;
+
     spu->IP  = 0;
     spu->spu_err_file_name = spu_err_file_name;
 
@@ -65,10 +67,12 @@ int SPUdtor(struct SPU *spu) {
 
     free(spu->CS);
 
-    spu->rax = 0;
-    spu->rbx = 0;
-    spu->rcx = 0;
-    spu->rdx = 0;
+    for (int i = 0; i < num_reg; i++) 
+        spu->reg[i] = 0;
+    
+    for (int i = 0; i < ram_capacity; i++)
+        spu->RAM[i] = 0;
+
     spu->IP  = 0;
 
     spu->is_dtor = 1;
@@ -132,10 +136,10 @@ int SPUdump(struct SPU *spu) {
 
     fprintf(err_file, "is_ctor = %d\n", (int) spu->is_ctor);
     fprintf(err_file, "is_dtor = %d\n", (int) spu->is_dtor);
-    fprintf(err_file, "rax = %d\n", (int) spu->rax);
-    fprintf(err_file, "rbx = %d\n", (int) spu->rbx);
-    fprintf(err_file, "rcx = %d\n", (int) spu->rcx);
-    fprintf(err_file, "rdx = %d\n", (int) spu->rdx);
+    fprintf(err_file, "rax = %d\n", (int) spu->reg[0]);
+    fprintf(err_file, "rbx = %d\n", (int) spu->reg[1]);
+    fprintf(err_file, "rcx = %d\n", (int) spu->reg[2]);
+    fprintf(err_file, "rdx = %d\n", (int) spu->reg[3]);
     fprintf(err_file, "IP  = %d\n", (int) spu->IP );
     fprintf(err_file, "CS_capacity  = %d\n", (int) spu->CS_capacity);
     fprintf(err_file, "CS  = %lu\n", (unsigned long) spu->CS );
@@ -154,6 +158,12 @@ int SPUdump(struct SPU *spu) {
         fprintf(err_file, " ");
 
     fprintf(err_file, "^IP = %d\n", (int) spu->IP);
+
+    fprintf(err_file, "\n");
+    fprintf(err_file, "RAM: \n");
+
+    for (int i = 0; i < ram_capacity; i++)
+        fprintf(err_file, "%3d-%c ", i, spu->RAM[i]);
 
     fclose(err_file);
 
@@ -251,17 +261,3 @@ int SPUreadbytecodebin(struct SPU *spu, const char *bytecode_file_name) {
 
     return 0;
 }
-
-/*
-    fseek(ReadableFile, EOF, SEEK_END);
-
-    struc_p->num_elem = ftell(ReadableFile);   
-
-    struc_p->buf = (char *) calloc(struc_p->num_elem + 1, sizeof(char));  
-
-    if (struc_p->buf == NULL)
-        return -1;
-
-    fseek(ReadableFile, 0, SEEK_SET);
-
-    fread(struc_p->buf, sizeof(char), struc_p->num_elem, ReadableFile);*/

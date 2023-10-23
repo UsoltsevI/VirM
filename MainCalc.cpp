@@ -11,7 +11,7 @@ int main() {
 
     assembly(ASM, Bytecode, Log);
     //disassemb(ASM, Bytecode);
-    //process(Bytecode, Outputfile);
+    process(Bytecode, Outputfile);
 
     printf("Program comlited\n");
     return 0;
