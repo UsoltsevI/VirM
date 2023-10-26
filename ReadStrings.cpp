@@ -45,11 +45,18 @@ size_t read_strings_to_buf(char * *buf, const char* name_file_input) {
 int count_number_wrods_in_buf(char *buf,  const size_t num_buf_elem) {
     int result = 0;
 
-    for (int i = 0; i < num_buf_elem; i++)
-        if ((buf[i] == '\n') || (buf[i] == ' '))
+    for (int i = 0; i < num_buf_elem; i++) {
+        if ((buf[i] == '\n') && (buf[i + 1] != '\n') && (buf[i + 1] != ' ') && (buf[i + 1] != '\0'))
+            result++;
+        
+        if ((buf[i] == ' ') && (buf[i + 1] != '\n') && (buf[i + 1] != ' ') && (buf[i + 1] != '\0'))
             result++;
 
-    return result;
+        if (buf[i] == '\0')
+            return ++result;
+    }
+
+    return ++result;
 }
 
 int convert_buf_to_strings_array(struct string * *data, char * buf, const size_t num_data_elem, const size_t num_buf_elem) {
@@ -94,11 +101,11 @@ void write_strings(struct string *data, const size_t num_data_elem, const char* 
     FILE *file_output = fopen(name_file_output, "w");
 
     fprintf(file_output, "DATA: \n");
-    fprintf(file_output, "str:      len:\n");
+    fprintf(file_output, "str:              len:\n");
 
-    for (size_t i = 0; i < num_data_elem - 2; i++) {
-        write_one_str(data[i].str, 6, file_output);
-        fprintf(file_output, "%6lu\n", data[i].len);
+    for (size_t i = 0; i < num_data_elem; i++) { 
+        write_one_str(data[i].str, 10, file_output);
+        fprintf(file_output, "%10lu\n", data[i].len);
     }
 
     fclose(file_output);
@@ -179,6 +186,8 @@ int convert_str_to_int(const string s, int *a) {
 }
 
 int my_pow(int a, const int b) {
+    if (b == 0) return 1;
+
     int result = a;
 
     for (int i = 1; i < b; i++)

@@ -114,13 +114,11 @@ int SPUver(struct SPU *spu) {
     return 0;
 }
 
-int SPUdump(struct SPU *spu) {
+int SPUdump(struct SPU *spu, FILE* err_file) {
     if (SPUver(spu)) {
         printf("SPUver != 0 at SPUdump\n");
         return -1;
     }
-
-    FILE *err_file = fopen(spu->spu_err_file_name, "w");
 
     if (err_file == NULL) {
         printf("fopen failed at SPUdump\n");
@@ -159,13 +157,22 @@ int SPUdump(struct SPU *spu) {
 
     fprintf(err_file, "^IP = %d\n", (int) spu->IP);
 
-    fprintf(err_file, "\n");
     fprintf(err_file, "RAM: \n");
 
     for (int i = 0; i < ram_capacity; i++)
-        fprintf(err_file, "%3d-%c ", i, spu->RAM[i]);
+        fprintf(err_file, "%.3d | ", i);
 
-    fclose(err_file);
+    fprintf(err_file, "\n");
+
+    /*for (int i = 0; i < ram_capacity * 5; i++)
+        fprintf(err_file, "-");
+
+    fprintf(err_file, "\n");*/
+
+    for (int i = 0; i < ram_capacity; i++)
+        fprintf(err_file, "%.3d | ", spu->RAM[i]);
+    
+    fprintf(err_file, "\n\n\n");
 
     return 0;
 }
@@ -242,6 +249,7 @@ int SPUreadbytecodebin(struct SPU *spu, const char *bytecode_file_name) {
     fseek(bytecode, EOF, SEEK_END);//addres = fseek(...)
 
     spu->CS_capacity = ftell(bytecode);
+    //printf("spu->CS_capacity = %lu\n", spu->CS_capacity);
     fseek(bytecode, 0, SEEK_SET);
 
     spu->CS_capacity = spu->CS_capacity / sizeof(int) + 1;
@@ -258,6 +266,19 @@ int SPUreadbytecodebin(struct SPU *spu, const char *bytecode_file_name) {
     spu->CS[spu->CS_capacity] = 0;
 
     fclose(bytecode);
+
+    return 0;
+}
+
+int SPUwritebytecodeastxt(struct SPU spu, const char *bytecode_txt_file_name) {
+    FILE* bytecode_txt = fopen(bytecode_txt_file_name, "w");
+
+    if (!bytecode_txt) return -1;
+
+    for (int i = 0; i < spu.CS_capacity; i++)
+        fprintf(bytecode_txt, "%3d   %d\n", i, spu.CS[i]);
+    
+    fclose(bytecode_txt);
 
     return 0;
 }

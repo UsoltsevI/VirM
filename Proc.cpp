@@ -3,15 +3,18 @@
 #include "Calc.h"
 #include "Stack.h"
 
-//#define DEBUGONP
+#define DEBUGONP
+
+//#define P printf("LINE: %d\n", __LINE__);
 
 int process(const char *Bytecodefilename, const char *Outputfilename) {
+    printf("The processor has started performing his tasks\n");
     FILE *Outputfile = fopen(Outputfilename, "w");
 
     struct SPU spu = {};
     SPUctor(&spu, "ERRSPU.txt", "ERRORS.txt", 1, 1);
     SPUreadbytecodebin(&spu, Bytecodefilename);
-    //SPUdump(&spu);
+    FILE *err_file = fopen(spu.spu_err_file_name, "w");
 
     if (spu.CS[spu.IP] != VERSION) {
         printf("Bytecode has format not for this verion of program\n");
@@ -19,12 +22,19 @@ int process(const char *Bytecodefilename, const char *Outputfilename) {
         printf("spu.CS[spu.IP] = %d\n", spu.CS[spu.IP]);
         return -1;
     }
-
+//
+    SPUwritebytecodeastxt(spu, "BBB.txt");
+//
     spu.IP += 2;
-    int value1 = 0, value2 = 0;
+    int value1 = 0, value2 = 0, addres = 0;
+    char *str = 0;
     int input  = spu.CS[spu.IP];
 
     while (spu.IP < spu.CS_capacity) {
+        //printf("spu.IP = %lu\n", spu.IP);
+#ifdef DEBUGONP
+        SPUdump(&spu, err_file);
+#endif
         switch(input) {
             case HLT: 
                 return 0;
@@ -63,6 +73,40 @@ int process(const char *Bytecodefilename, const char *Outputfilename) {
                     return -1;
                 }
 
+                break;
+            
+            case Popm:
+                addres = stack_pop(&spu.stk);
+                value1 = stack_pop(&spu.stk);
+                spu.RAM[addres] = value1;
+                break;
+            
+            case Pushm:
+                addres = stack_pop(&spu.stk);
+                value1 = spu.RAM[addres];
+                stack_push(&spu.stk, value1);
+                break;
+            
+            case Popv:
+                addres = stack_pop(&spu.stk);
+                value1 = stack_pop(&spu.stk);
+                //printf("h\n");
+                spu.video_ram[addres] = (png_byte) value1;
+                //printf("a\n");
+                break;
+            
+            case Pushv:
+                addres = stack_pop(&spu.stk);
+                value1 = (int) spu.video_ram[addres];
+                stack_push(&spu.stk, value1);
+                break;
+
+            case Outv:
+                value2 = stack_pop(&spu.stk);
+                value1 = stack_pop(&spu.stk);
+                spu.IP++;
+                str = unhash_file_name(spu.CS[spu.IP]);
+                create_png_image_from_video_ram(str, spu.video_ram, value1, value2);
                 break;
 
             case Div:
@@ -233,21 +277,16 @@ int process(const char *Bytecodefilename, const char *Outputfilename) {
             default:
                 printf("Undefined command\n");
                 printf("input = %d\n", input);
+                printf("spu.IP = %lu\n", spu.IP);
                 break;
         }
         spu.IP++;
-
-#ifdef DEBUGONP
-        SPUdump(&spu);
-        printf("Press any key ro continue\n");
-        int zero = 0;
-        scanf("%d", &zero);
-#endif
 
         input = spu.CS[spu.IP];
     }
 
     fclose(Outputfile);
+    fclose(err_file);
 
     SPUdtor(&spu);
 

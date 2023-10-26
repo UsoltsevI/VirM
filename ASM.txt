@@ -1,0 +1,49 @@
+ASMU
+113
+145
+push 10 %r
+push 0 pop []
+push 250  %g
+push 1 pop []
+push 200 %b
+push 2 pop []
+push 150 %a
+push 3 pop []
+push 0 %elem %for %count %numeber %of %pixels
+push 4 pop []
+push 100
+push 5 pop []
+push 1
+push 6 pop []
+:loop
+push 0 push []
+push 4 push [] pop ()
+push 4 push []
+push 6 push [] 
+add
+push 4 pop []
+push 1 push []
+push 4 push [] pop ()
+push 4 push []
+push 6 push [] 
+add
+push 4 pop []
+push 2 push []
+push 4 push [] pop ()
+push 4 push []
+push 6 push [] 
+add
+push 4 pop []
+push 3 push []
+push 4 push [] pop ()
+push 4 push []
+push 6 push [] 
+add
+push 4 pop [] 
+push 4 push []
+push 5 push []
+jb :loop
+push 5
+push 5
+outv res
+HLT

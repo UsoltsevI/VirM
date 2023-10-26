@@ -18,10 +18,12 @@ static int numundefmarks = 0;
 static int search_mark(const char *inhel);
 static int add_mark(const char* input, const size_t curnum);
 static int jmp_func(struct string *asm_data, int buf[], size_t *cur_str, size_t *curnum);
+static int set_p_elem(struct string *asm_data, int buf[], size_t *cur_str, size_t *curnum, const TypeElem Enum);
+static int set_p_elem_ram(struct string *asm_data, int buf[], size_t *cur_str, size_t *curnum, const TypeElem Enum);
 static void dump_buf(const int *buf, const size_t numcommand);
 static void create_arr();
-static void put_pop_or_push(struct string *asm_data, int buf[], size_t *cur_str, size_t *curnum);
 static void write_bytecode(const int *buf, const char *Bytecodefilename, const size_t numcommand);
+
 
 int assembly(const char *ASMfilename, const char *Bytecodefilename, const char *Logfilename) {
     printf("The assembler has started performing its tasks\n");
@@ -36,6 +38,11 @@ int assembly(const char *ASMfilename, const char *Bytecodefilename, const char *
         change_str_ending_buf(asm_buf); 
         LOG_O;
     }
+
+#ifdef DEBUGONA
+    //printf("num_str = %lu\n", num_str);
+    write_strings(asm_data, num_str, "LLL.txt");
+#endif
 
     size_t cur_str = 0;
 
@@ -66,7 +73,16 @@ int assembly(const char *ASMfilename, const char *Bytecodefilename, const char *
 
     numundefmarks = 0; 
 
-    while ((curnum < numcommand + 2) && (cur_str < num_str)) {
+    //printf("numcommand = %d\n", numcommand);
+    //printf("num_str = %lu\n", num_str);
+
+    while ((curnum < numcommand) && (cur_str < num_str) && (asm_data[cur_str].str != NULL)) {
+        if (asm_data[cur_str].str[0] == '%') {
+            //printf("continue\n");
+            cur_str++;
+            continue;
+        }
+        
         LOG_1(asm_data[cur_str].str);
 
         if (!str_cmp(asm_data[cur_str], "HLT")) {
@@ -74,11 +90,23 @@ int assembly(const char *ASMfilename, const char *Bytecodefilename, const char *
             LOG_2 (HLT);
             
         } else if (!str_cmp(asm_data[cur_str], "push")) {
-            put_pop_or_push(asm_data, buf, &cur_str, &curnum);
+            int Enum = Push;
+            if (set_p_elem(asm_data, buf, &cur_str, &curnum, Enum))
+                set_p_elem_ram(asm_data, buf, &cur_str, &curnum, Enum);
+            //curnum++;
         
         } else if (!str_cmp(asm_data[cur_str], "pop")) {
-            put_pop_or_push(asm_data, buf, &cur_str, &curnum);
-        }
+            int Enum = Pop;
+            if (set_p_elem(asm_data, buf, &cur_str, &curnum, Enum))
+                set_p_elem_ram(asm_data, buf, &cur_str, &curnum, Enum);
+            //curnum++;
+
+        } else if (!str_cmp(asm_data[cur_str], "outv")) {
+            buf[curnum++] = Outv;
+            cur_str++;
+            buf[curnum++] = hash_file_name(asm_data[cur_str]);
+            LOG_4(buf[curnum - 2], buf[curnum - 1]);
+        } 
 
     //code generation for several commands
 #define DEF_CMD(name, number)                       \
@@ -112,8 +140,6 @@ int assembly(const char *ASMfilename, const char *Bytecodefilename, const char *
         cur_str++;
     }
 
-    write_bytecode(buf, Bytecodefilename, numcommand);
-
 #ifdef DEBUGONA
     dump_buf(buf, numcommand);
 #endif
@@ -127,6 +153,8 @@ int assembly(const char *ASMfilename, const char *Bytecodefilename, const char *
     
     printf("The assembler has completed its tasks\n");
 
+    write_bytecode(buf, Bytecodefilename, numcommand);
+
     clean_strings(&asm_data, &asm_buf);
 
     LOG_C;
@@ -134,9 +162,37 @@ int assembly(const char *ASMfilename, const char *Bytecodefilename, const char *
     return 0;
 }
 
+int hash_file_name(const struct string s) {
+    int hash = 0;
+
+    char *helper = (char *) &hash;
+
+    for (int i = 0; i <= s.len; i++) 
+        *(helper + i) = s.str[i];
+
+    return hash; 
+}
+
+char *unhash_file_name(int hash) {
+    char *filename = (char *) calloc(8, sizeof(char));
+    char *helper = (char *) &hash;
+
+    unsigned i = 0;
+
+    for (i = 0; (i < 4) && ('a' <= *(helper + i)) && (*(helper + i) <= 'z'); i++) 
+        filename[i] = (unsigned char) *(helper + i);
+    
+    filename[i++] = '.';
+    filename[i++] = 'p';
+    filename[i++] = 'n';
+    filename[i++] = 'g';
+
+    return filename;
+}
+
 static void write_bytecode(const int *buf, const char *Bytecodefilename, const size_t numcommand) {
     FILE *Bytecode = fopen(Bytecodefilename, "wb");
-    fwrite(buf, sizeof(int), numcommand + 2, Bytecode);
+    fwrite(buf, sizeof(int), numcommand, Bytecode);
     fclose(Bytecode);
 }
 
@@ -197,7 +253,7 @@ int check_signature(const char *signature) {
 static int jmp_func(struct string *asm_data, int buf[], size_t *cur_str, size_t *curnum) {
     (*cur_str)++;
 
-    LOG_PN(asm_data[*cur_str].str);
+    LOG_P(asm_data[*cur_str].str);
 
     int check = search_mark(asm_data[*cur_str].str);
 
@@ -231,64 +287,70 @@ static void create_arr() {
         arrmark[i].addres = -1;
 }
 
-static void put_pop_or_push(struct string *asm_data, int buf[], size_t *cur_str, size_t *curnum) {
-    int Enum = 0;
-
-    if (!str_cmp(asm_data[*cur_str], "pop")) {
-        Enum = Pop;
-
-    } else if (!str_cmp(asm_data[*cur_str], "push")) {
-        Enum = Push;
-
-    } else {
-        printf("Undefined command in put_pop_or_push\n");
-        printf("input = %s\n", asm_data[*cur_str].str);
-    }
-
-    (*cur_str)++;
-
+static int set_p_elem(struct string *asm_data, int buf[], size_t *cur_str, size_t *curnum, const TypeElem EnumEnt) {
     int value = 0;
+    //printf("%s\n", asm_data[*cur_str].str);
+    (*cur_str)++;
+    
+    //printf("%d\n", convert_str_to_int(asm_data[*cur_str], &value));
 
-    if (convert_str_to_int(asm_data[*cur_str], &value) == -1) {
-        if (Enum == Pop) {
-            Enum = Popr;
+    if (convert_str_to_int(asm_data[*cur_str], &value)) {
+        //printf("VALUE = %d\n", value);
+        LOG_P(asm_data[*cur_str].str);
+        int Enum = 40 + EnumEnt;
 
-        } else if (Enum == Push) {
-            Enum = Pushr;
-        } 
-
-        LOG_PN(asm_data[*cur_str].str);
         if (!str_cmp(asm_data[*cur_str], "rax")) {
-            buf[(*curnum)++] = Enum, 
+            buf[(*curnum)++] = Enum;
             buf[(*curnum)++] = 1;
-            LOG_4X (Enum, 1);
+            printf("reg\n");
+            LOG_4X (buf[*curnum - 2], buf[*curnum - 1]);
 
         } else if (!str_cmp(asm_data[*cur_str], "rbx")) {
             buf[(*curnum)++] = Enum;
             buf[(*curnum)++] = 2;
-            LOG_4X (Enum, 2);
+            printf("reg\n");
+            LOG_4X (buf[*curnum - 2], buf[*curnum - 1]);
 
         } else if (!str_cmp(asm_data[*cur_str], "rcx")) {
             buf[(*curnum)++] = Enum;
             buf[(*curnum)++] = 3;
-            LOG_4X (Enum, 3);
+            printf("reg\n");
+            LOG_4X (buf[*curnum - 2], buf[*curnum - 1]);
 
         } else if (!str_cmp(asm_data[*cur_str], "rdx")) {
             buf[(*curnum)++] = Enum;
             buf[(*curnum)++] = 4;
-            LOG_4X (Enum, 4);
+            printf("reg\n");
+            LOG_4X (buf[*curnum - 2], buf[*curnum - 1]);
 
         } else {
-            printf("Undefined command after %s\n", asm_data[*cur_str].str);
+            return -1;
         }
 
-    } else if (Enum == Push) {
-        buf[(*curnum)++] = Enum;
+    } else {
+        buf[(*curnum)++] = EnumEnt;
         buf[(*curnum)++] = value;
-        fprintf(Log, "%d \t\t%d %d \t\t%lu %lu\n", value, Enum, value, *curnum - 2, *curnum - 1);
-
-    } else if (Enum == Pop) {
-        buf[(*curnum)++] = Pop;
-        LOG_2X(Pop);
+        fprintf(Log, "%6d %10d %6d %12lu %lu\n", value, buf[*curnum - 2], buf[*curnum - 1], *curnum - 2, *curnum - 1);
     }
+
+    return 0;
+}
+
+static int set_p_elem_ram(struct string *asm_data, int buf[], size_t *cur_str, size_t *curnum, const TypeElem EnumEnt) {
+    if (asm_data[*cur_str].str[0] == '[') {
+        int Enum = 60 + EnumEnt;
+        buf[(*curnum)++] = Enum;
+        LOG_2XP (buf[*curnum - 1]);
+
+    } else if (asm_data[*cur_str].str[0] == '(') {
+        int Enum = 70 + EnumEnt;
+        buf[(*curnum)++] = Enum;
+        LOG_2XP (buf[*curnum - 1]);
+
+    } else {
+        printf("Incorrect element after push or pop\n");
+        return -1;
+    }
+
+    return 0;
 }
