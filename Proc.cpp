@@ -3,7 +3,7 @@
 #include "Calc.h"
 #include "Stack.h"
 
-#define DEBUGONP
+//#define DEBUGONP
 
 //#define P printf("LINE: %d\n", __LINE__);
 
@@ -22,16 +22,17 @@ int process(const char *Bytecodefilename, const char *Outputfilename) {
         printf("spu.CS[spu.IP] = %d\n", spu.CS[spu.IP]);
         return -1;
     }
-//
+
+#ifdef DEBUGONP
     SPUwritebytecodeastxt(spu, "BBB.txt");
-//
+#endif
+
     spu.IP += 2;
     int value1 = 0, value2 = 0, addres = 0;
     char *str = 0;
     int input  = spu.CS[spu.IP];
 
     while (spu.IP < spu.CS_capacity) {
-        //printf("spu.IP = %lu\n", spu.IP);
 #ifdef DEBUGONP
         SPUdump(&spu, err_file);
 #endif
@@ -90,9 +91,7 @@ int process(const char *Bytecodefilename, const char *Outputfilename) {
             case Popv:
                 addres = stack_pop(&spu.stk);
                 value1 = stack_pop(&spu.stk);
-                //printf("h\n");
                 spu.video_ram[addres] = (png_byte) value1;
-                //printf("a\n");
                 break;
             
             case Pushv:
@@ -107,6 +106,25 @@ int process(const char *Bytecodefilename, const char *Outputfilename) {
                 spu.IP++;
                 str = unhash_file_name(spu.CS[spu.IP]);
                 create_png_image_from_video_ram(str, spu.video_ram, value1, value2);
+                break;
+            
+            case Call:
+                spu.IP++;
+                stack_push(&spu.stk, spu.IP);
+
+                if (spu.CS[spu.IP] < 1) {
+                    printf("ERROR: addres after Jmp < 1\n");
+                    return -1;
+                }
+
+                spu.IP = spu.CS[spu.IP] - 1;
+                break;
+            
+            case Ret:
+                value1 = stack_pop(&spu.stk);
+                addres = stack_pop(&spu.stk);
+                spu.IP = addres;
+                stack_push(&spu.stk, value1);
                 break;
 
             case Div:
@@ -172,8 +190,6 @@ int process(const char *Bytecodefilename, const char *Outputfilename) {
                     printf("ERROR: addres after Jmp < 1\n");
                     return -1;
                 }
-                //if (spu.CS[spu.IP] - 1 < spu.IP)
-                //    printf("Perhaps it is an infinite loop...\n");
 
                 spu.IP = spu.CS[spu.IP] - 1;
                 break;

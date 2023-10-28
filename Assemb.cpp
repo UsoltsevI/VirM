@@ -21,6 +21,7 @@ static int jmp_func(struct string *asm_data, int buf[], size_t *cur_str, size_t 
 static int set_p_elem(struct string *asm_data, int buf[], size_t *cur_str, size_t *curnum, const TypeElem Enum);
 static int set_p_elem_ram(struct string *asm_data, int buf[], size_t *cur_str, size_t *curnum, const TypeElem Enum);
 static void dump_buf(const int *buf, const size_t numcommand);
+static void dump_arr_mark(const char *filename);
 static void create_arr();
 static void write_bytecode(const int *buf, const char *Bytecodefilename, const size_t numcommand);
 
@@ -40,7 +41,6 @@ int assembly(const char *ASMfilename, const char *Bytecodefilename, const char *
     }
 
 #ifdef DEBUGONA
-    //printf("num_str = %lu\n", num_str);
     write_strings(asm_data, num_str, "LLL.txt");
 #endif
 
@@ -73,12 +73,8 @@ int assembly(const char *ASMfilename, const char *Bytecodefilename, const char *
 
     numundefmarks = 0; 
 
-    //printf("numcommand = %d\n", numcommand);
-    //printf("num_str = %lu\n", num_str);
-
     while ((curnum < numcommand) && (cur_str < num_str) && (asm_data[cur_str].str != NULL)) {
         if (asm_data[cur_str].str[0] == '%') {
-            //printf("continue\n");
             cur_str++;
             continue;
         }
@@ -93,13 +89,11 @@ int assembly(const char *ASMfilename, const char *Bytecodefilename, const char *
             int Enum = Push;
             if (set_p_elem(asm_data, buf, &cur_str, &curnum, Enum))
                 set_p_elem_ram(asm_data, buf, &cur_str, &curnum, Enum);
-            //curnum++;
         
         } else if (!str_cmp(asm_data[cur_str], "pop")) {
             int Enum = Pop;
             if (set_p_elem(asm_data, buf, &cur_str, &curnum, Enum))
                 set_p_elem_ram(asm_data, buf, &cur_str, &curnum, Enum);
-            //curnum++;
 
         } else if (!str_cmp(asm_data[cur_str], "outv")) {
             buf[curnum++] = Outv;
@@ -142,6 +136,10 @@ int assembly(const char *ASMfilename, const char *Bytecodefilename, const char *
 
 #ifdef DEBUGONA
     dump_buf(buf, numcommand);
+    dump_arr_mark("mark.txt");
+    int zero = 0;
+    printf("Enter any key to contimue:\n");
+    scanf("%d", &zero);
 #endif
 
     if (numundefmarks > 0) {
@@ -282,6 +280,29 @@ static void dump_buf(const int *buf, const size_t numcommand) {
     printf("\n}\n");
 }
 
+static void dump_arr_mark(const char *filename) {
+    FILE *file = fopen(filename, "w");
+
+    fprintf(file, "arrmark: { \n");
+
+    for (size_t i = 0; i < maxnummark; i++)
+        fprintf(file, "%6lu ", i);
+    
+    fprintf(file, "\n");
+
+    for (size_t i = 0; i < maxnummark; i++)
+        fprintf(file, "%6s ", arrmark[i].name);
+
+    fprintf(file, "\n");
+
+    for (size_t i = 0; i < maxnummark; i++)
+        fprintf(file, "%6d ", arrmark[i].addres);
+
+    fprintf(file, "\n}\n");
+
+    fclose(file);
+}
+
 static void create_arr() {
     for (size_t i = 0; i < maxnummark; i++)
         arrmark[i].addres = -1;
@@ -289,13 +310,10 @@ static void create_arr() {
 
 static int set_p_elem(struct string *asm_data, int buf[], size_t *cur_str, size_t *curnum, const TypeElem EnumEnt) {
     int value = 0;
-    //printf("%s\n", asm_data[*cur_str].str);
+
     (*cur_str)++;
-    
-    //printf("%d\n", convert_str_to_int(asm_data[*cur_str], &value));
 
     if (convert_str_to_int(asm_data[*cur_str], &value)) {
-        //printf("VALUE = %d\n", value);
         LOG_P(asm_data[*cur_str].str);
         int Enum = 40 + EnumEnt;
 
@@ -348,8 +366,9 @@ static int set_p_elem_ram(struct string *asm_data, int buf[], size_t *cur_str, s
         LOG_2XP (buf[*curnum - 1]);
 
     } else {
-        printf("Incorrect element after push or pop\n");
-        return -1;
+        buf[(*curnum)++] = EnumEnt;
+        (*cur_str)--;
+        LOG_2XP (buf[*curnum - 1]);
     }
 
     return 0;

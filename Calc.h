@@ -25,6 +25,8 @@ enum {
     Sin  = 9,
     Cos  = 10,
     In   = 11,
+    Call = 12, //for using functions, like a jump
+    Ret  = 13, //return someting to stack, like a simple functions in assemb
     Jmp  = 44,
     Ja   = 45,
     Jae  = 46,
